@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UPS Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='favicon.ico') }}"
+      type="image/x-icon"
+    />
+    <script src="{{ url_for('static', filename='js/gauge.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <h1>UPS Dashboard</h1>
+    <div class="container">
+      <div class="gauge-container">
+        <div class="gauge-title">Battery Charge</div>
+        <canvas id="batteryChargeGauge"></canvas>
+        <div id="batteryChargeValue" class="gauge-value"></div>
+      </div>
+      <div class="gauge-container">
+        <div class="gauge-title">Input Voltage</div>
+        <canvas id="inputVoltageGauge"></canvas>
+        <div id="inputVoltageValue" class="gauge-value"></div>
+      </div>
+      <div class="gauge-container">
+        <div class="gauge-title">UPS Load</div>
+        <canvas id="upsLoadGauge"></canvas>
+        <div id="upsLoadValue" class="gauge-value"></div>
+      </div>
+      <div class="charts-container">
+        <canvas id="inputVoltageChart"></canvas>
+        <canvas id="upsLoadChart"></canvas>
+        <canvas id="batteryChargeChart"></canvas>
+      </div>
+    </div>
+    <footer>
+      <p>
+        &copy; Created with 🧉 by
+        <a href="https://juangonzalez.com.ar">Juan Gonzalez.</a> All rights
+        reserved.
+      </p>
+      <p><a hreft="https://github.com">Repositorio</a></p>
+    </footer>
+
+    <script>
+      var data = {{ data | tojson | safe }};
+    </script>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+  </body>
+</html>
