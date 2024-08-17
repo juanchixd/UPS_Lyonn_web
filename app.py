@@ -11,7 +11,6 @@ import os
 import requests
 from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify
-from supabase import create_client, Client
 
 # Crear una instancia de Flask / Create a Flask instance
 app = Flask(__name__)
@@ -20,9 +19,7 @@ app = Flask(__name__)
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 API_URL = os.getenv("API_URL")
-
-# Crear una instancia de Supabase / Create a Supabase instance
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+NAME_TABLE = os.getenv("NAME_TABLE")
 
 # Ruta principal / Main route
 
@@ -48,8 +45,7 @@ def index():
 @app.route('/api/data')
 def api_data():
     # Realiza una solicitud GET a la API externa / Make a GET request to the external API
-    response = requests.get(
-        'https://apiups.juangonzalez.com.ar/api/last_ups_data')
+    response = requests.get(API_URL)
     if response.status_code == 200:
         data = response.json()
     else:
@@ -65,16 +61,29 @@ def api_data():
 
 @app.route('/api/last_24_hours')
 def last_24_hours():
-    # Obtener los datos de las últimas 24 horas de Supabase / Get the last 24 hours data from Supabase
+    # Asegúrate de usar UTC si tu servidor y Supabase están en zonas horarias diferentes / Make sure to use UTC if your server and Supabase are in different time zones
     now = datetime.now()
     last_24_hours = now - timedelta(hours=24)
 
-    response = supabase.table('ups_status').select(
-        'timestamp, ups_load, input_voltage, battery_charge'
-    ).gte('timestamp', last_24_hours.isoformat()).execute()
+    url = f"{SUPABASE_URL}/rest/v1/{NAME_TABLE}"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+    }
 
-    if response.data:
-        return jsonify(response.data)
+    # Parámetros para filtrar por timestamp y seleccionar las columnas necesarias / Parameters to filter by timestamp and select the necessary columns
+    params = {
+        "select": "timestamp,ups_load,input_voltage,battery_charge",
+        "timestamp": f"gte.{last_24_hours.isoformat()}",
+        "order": "timestamp.asc"
+    }
+
+    response = requests.get(url, headers=headers, params=params)
+
+    if response.status_code == 200:
+        return response.json()
     else:
         return jsonify([])
 
