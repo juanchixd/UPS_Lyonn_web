@@ -38,13 +38,14 @@ document.addEventListener("DOMContentLoaded", function () {
         subDivColor: "#000000",
       },
       highDpiSupport: true,
-      animationSpeed: 1,
+      animationSpeed: 0,
     };
 
     var target = document.getElementById(elementId);
     var gauge = new Gauge(target).setOptions(opts);
     gauge.maxValue = maxValue;
     gauge.setMinValue(minValue);
+    gauge.animationSpeed = 1;
     gauge.set(initialValue);
 
     return gauge;

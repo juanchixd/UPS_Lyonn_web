@@ -19,6 +19,7 @@ app = Flask(__name__)
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 API_URL = os.getenv("API_URL")
+print(API_URL)
 NAME_TABLE = os.getenv("NAME_TABLE")
 
 # Ruta principal / Main route
