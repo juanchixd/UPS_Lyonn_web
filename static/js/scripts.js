@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
         subDivColor: "#000000",
       },
       highDpiSupport: true,
-      animationSpeed: 32,
+      animationSpeed: 0,
     };
 
     var target = document.getElementById(elementId);
