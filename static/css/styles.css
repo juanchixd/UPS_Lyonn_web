@@ -2,7 +2,60 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 20px;
-    background-color: #f4f4f4;
+    transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* Estilos para Light Mode */
+body.light-mode {
+    background-color: #f8f8f8;
+    color: rgb(0, 0, 0);
+}
+
+body.light-mode .gauge-container,
+body.light-mode .charts-container {
+    background-color: #fff;
+}
+
+/* Estilos para Dark Mode */
+body.dark-mode {
+    background-color: #1d2122;
+    color: white;
+}
+
+body.dark-mode .gauge-container,
+body.dark-mode .charts-container {
+    background-color: #333;
+}
+
+body.dark-mode .gauge-title,
+body.dark-mode .gauge-value {
+    color: white;
+}
+
+body.dark-mode footer {
+    background-color: #1d2122;
+    color: white;
+}
+
+
+/* Estilos para el botón */
+#dark-mode-toggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    padding: 10px;
+    background-color: #6200ea;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.5em;
+    z-index: 1000;
+    transition: transform 0.3s ease, background-color 0.5s ease;
+}
+
+#dark-mode-toggle:hover {
+    transform: translateY(-5px);
 }
 
 .container {
@@ -24,12 +77,12 @@ body {
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.gauge-container {
     flex: 1 1 300px;
     max-width: 100%;
 }
+
+
+
 
 .gauge-container canvas {
     width: 100%;

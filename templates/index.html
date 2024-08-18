@@ -17,7 +17,8 @@
     <script src="{{ url_for('static', filename='js/chart.js') }}"></script>
     <!--<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>-->
   </head>
-  <body>
+  <body class="dark-mode">
+    <button id="dark-mode-toggle">🌕</button>
     <h1>UPS Dashboard</h1>
     <div class="container">
       <div class="gauge-container">
@@ -54,5 +55,6 @@
       var data = {{ data | tojson | safe }};
     </script>
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/toggle_mode.js') }}"></script>
   </body>
 </html>
