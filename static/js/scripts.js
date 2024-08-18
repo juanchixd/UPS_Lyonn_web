@@ -1,11 +1,18 @@
 document.addEventListener("DOMContentLoaded", function () {
+  let currentGaugeValues = {
+    batteryCharge: null,
+    inputVoltage: null,
+    upsLoad: null,
+  };
+
   // Función para crear y actualizar los gauges
   function createGauge(
     elementId,
     minValue,
     maxValue,
     initialValue,
-    gaugeColors
+    gaugeColors,
+    animate = true
   ) {
     var opts = {
       angle: 0.2,
@@ -38,14 +45,13 @@ document.addEventListener("DOMContentLoaded", function () {
         subDivColor: "#000000",
       },
       highDpiSupport: true,
-      animationSpeed: 0,
+      animationSpeed: animate ? 6 : 0,
     };
 
     var target = document.getElementById(elementId);
     var gauge = new Gauge(target).setOptions(opts);
     gauge.maxValue = maxValue;
     gauge.setMinValue(minValue);
-    gauge.animationSpeed = 1;
     gauge.set(initialValue);
 
     return gauge;
@@ -78,29 +84,38 @@ document.addEventListener("DOMContentLoaded", function () {
           { color: "#FF4C4C", min: 80, max: 100 },
         ];
 
-        const batteryChargeGauge = createGauge(
-          "batteryChargeGauge",
-          0,
-          100,
-          data.battery_charge,
-          batteryChargeColors
-        );
-
-        const inputVoltageGauge = createGauge(
-          "inputVoltageGauge",
-          170,
-          270,
-          data.input_voltage,
-          inputVoltageColors
-        );
-
-        const upsLoadGauge = createGauge(
-          "upsLoadGauge",
-          0,
-          100,
-          data.ups_load,
-          upsLoadColors
-        );
+        // Si los gauges no se han inicializado, inicialízalos sin animación
+        if (currentGaugeValues.batteryCharge === null) {
+          currentGaugeValues.batteryCharge = createGauge(
+            "batteryChargeGauge",
+            0,
+            100,
+            data.battery_charge,
+            batteryChargeColors,
+            false // Sin animación
+          );
+          currentGaugeValues.inputVoltage = createGauge(
+            "inputVoltageGauge",
+            170,
+            270,
+            data.input_voltage,
+            inputVoltageColors,
+            false // Sin animación
+          );
+          currentGaugeValues.upsLoad = createGauge(
+            "upsLoadGauge",
+            0,
+            100,
+            data.ups_load,
+            upsLoadColors,
+            false // Sin animación
+          );
+        } else {
+          // Actualiza los valores de los gauges con animación
+          currentGaugeValues.batteryCharge.set(data.battery_charge);
+          currentGaugeValues.inputVoltage.set(data.input_voltage);
+          currentGaugeValues.upsLoad.set(data.ups_load);
+        }
 
         document.getElementById("batteryChargeValue").textContent =
           data.battery_charge + "%";
@@ -112,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch((error) => console.error("Error fetching data:", error));
   }
 
-  // Función para crear las gráficas de las últimas 24 horas / Function to create the 24 hours charts
+  // Función para crear las gráficas de las últimas 24 horas
   function create24HoursChart(data, canvasId, label, dataKey) {
     const ctx = document.getElementById(canvasId).getContext("2d");
     const labels = data.map((d) => {
