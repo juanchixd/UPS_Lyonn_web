@@ -192,7 +192,33 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch((error) => console.error("Error fetching data:", error));
   }
 
+  function fetch24hours_update() {
+    fetch("/api/last_24_hours")
+      .then((response) => response.json())
+      .then((data) => {
+        const batteryChargeChart =
+          document.getElementById("batteryChargeChart");
+        const inputVoltageChart = document.getElementById("inputVoltageChart");
+        const upsLoadChart = document.getElementById("upsLoadChart");
+
+        batteryChargeChart.data.datasets[0].data = data.map(
+          (d) => d.battery_charge
+        );
+        batteryChargeChart.update();
+
+        inputVoltageChart.data.datasets[0].data = data.map(
+          (d) => d.input_voltage
+        );
+        inputVoltageChart.update();
+
+        upsLoadChart.data.datasets[0].data = data.map((d) => d.ups_load);
+        upsLoadChart.update();
+      })
+      .catch((error) => console.error("Error fetching data:", error));
+  }
+
   fetchDataAndUpdateGauges();
   setInterval(fetchDataAndUpdateGauges, 10000);
   fetch24HoursData();
+  setInterval(fetch24hours_update, 600000);
 });
