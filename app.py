@@ -50,11 +50,14 @@ def api_data():
     response = requests.get(API_URL)
     if response.status_code == 200:
         data = response.json()
+        # Agrego la url para mostrarla
+        data["api_url"] = API_URL
     else:
         data = {
             "ups_load": 0,
             "input_voltage": 0,
             "battery_charge": 0,
+            
         }
     return jsonify(data)
 
