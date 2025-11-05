@@ -50,8 +50,6 @@ def api_data():
     response = requests.get(API_URL)
     if response.status_code == 200:
         data = response.json()
-        # Agrego la url para mostrarla
-        data["api_url"] = API_URL
     else:
         data = {
             "ups_load": 0,
@@ -59,7 +57,7 @@ def api_data():
             "battery_charge": 0,
             
         }
-        data["api_url"] = API_URL
+        data["api_url"] = response.status_code
     return jsonify(data)
 
 # Ruta para obtener los datos de las últimas 24 horas / Route to get the last 24 hours data
