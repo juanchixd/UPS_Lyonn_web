@@ -59,6 +59,7 @@ def api_data():
             "battery_charge": 0,
             
         }
+        data["api_url"] = API_URL
     return jsonify(data)
 
 # Ruta para obtener los datos de las últimas 24 horas / Route to get the last 24 hours data
