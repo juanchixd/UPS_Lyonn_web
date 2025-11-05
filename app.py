@@ -6,6 +6,7 @@ Created on 2024
     - Email: contacto@juangonzalez.com.ar
 """
 
+
 # Importar librerías / Import libraries
 import os
 import requests
