@@ -240,7 +240,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     document.getElementById("last-update").innerText =
-      "Actualizado: " + new Date().toLocaleTimeString();
+      "Actualizado: " +
+      new Date().toLocaleTimeString("es-AR", { hour12: false });
 
     // Evitar animación brusca en la primera carga
     const animate = !isFirstLoad;
@@ -330,6 +331,6 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   init();
-  setInterval(fetchLiveData, 5000);
+  setInterval(fetchLiveData, 10000);
   setInterval(fetchHistory, 300000);
 });
