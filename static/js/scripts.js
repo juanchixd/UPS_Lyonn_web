@@ -1,8 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("🟢 Scripts.js v6.0 (Hard Static Update) cargado");
-
   // ==========================================
-  // 1. CONFIGURACIÓN DE RANGOS
+  // 1. CONFIGURACIÓN
   // ==========================================
   const RANGES = {
     voltage: { min: 190, warn: 205, high: 245, maxScale: 260 },
@@ -11,10 +9,9 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   let currentColors = { battery: "", voltage: "", load: "" };
+  let lastValidData = { bat: 0, volt: 0, load: 0 };
+  let isFirstLoad = true;
 
-  // ==========================================
-  // 2. CONFIGURACIÓN DE TEMA
-  // ==========================================
   const THEME = {
     dark: { text: "#94a3b8", grid: "rgba(255,255,255,0.05)" },
     light: { text: "#64748b", grid: "rgba(0,0,0,0.05)" },
@@ -23,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let charts = {};
 
   // ==========================================
-  // 3. HELPERS DE COLOR
+  // 2. HELPERS DE COLOR
   // ==========================================
   function getColorForBattery(val) {
     if (val <= RANGES.battery.critical) return "#ef4444";
@@ -43,7 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ==========================================
-  // 4. CONFIGURACIÓN DE GRÁFICOS
+  // 3. CONFIGURACIÓN GRÁFICOS
   // ==========================================
   function getGaugeConfig(label, maxVal, animate = true) {
     return {
@@ -54,8 +51,6 @@ document.addEventListener("DOMContentLoaded", function () {
         fontFamily: "Segoe UI, sans-serif",
         animations: {
           enabled: animate,
-          easing: "easeinout",
-          speed: 800,
           dynamicAnimation: { enabled: animate },
         },
         offsetY: -20,
@@ -128,32 +123,28 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ==========================================
-  // 5. INICIALIZACIÓN
+  // 4. INICIALIZACIÓN
   // ==========================================
   function init() {
     try {
-      // Batería (Animado)
       charts.radBat = new ApexCharts(
         document.querySelector("#radialBattery"),
         getGaugeConfig("Batería %", 100, true),
       );
       charts.radBat.render();
 
-      // Voltaje (NO Animado en config inicial)
       charts.radVolt = new ApexCharts(
         document.querySelector("#radialVoltage"),
         getGaugeConfig("Entrada V", RANGES.voltage.maxScale, false),
       );
       charts.radVolt.render();
 
-      // Carga (Animado)
       charts.radLoad = new ApexCharts(
         document.querySelector("#radialLoad"),
         getGaugeConfig("Carga %", 100, true),
       );
       charts.radLoad.render();
 
-      // Areas
       charts.areaVolt = new ApexCharts(
         document.querySelector("#areaVoltage"),
         getAreaConfig("#3b82f6", "Voltaje"),
@@ -170,10 +161,14 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       charts.areaBat.render();
 
-      if (typeof initialData !== "undefined" && initialData)
+      // Carga inicial asíncrona (esto evita que se bloquee la carga de la página)
+      if (typeof initialData !== "undefined" && initialData) {
         updateUI(initialData);
-      else fetchLiveData();
-
+      } else {
+        // Si no hay datos iniciales, mostramos "Cargando..." y pedimos
+        document.getElementById("status-indicator").innerText = "CONECTANDO...";
+        fetchLiveData();
+      }
       fetchHistory();
     } catch (e) {
       console.error("❌ Init Error:", e);
@@ -181,49 +176,63 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ==========================================
-  // 6. ACTUALIZACIÓN (FIX ANIMACIÓN)
+  // 5. UPDATE
   // ==========================================
 
   function updateGauge(chartInstance, val, colorFunc, typeKey, shouldAnimate) {
     if (!chartInstance) return;
-
     const newColor = colorFunc(val);
-
-    // Actualizar color solo si cambia (evita redraw innecesario)
     if (currentColors[typeKey] !== newColor) {
       chartInstance.updateOptions({ colors: [newColor] }, false, shouldAnimate);
       currentColors[typeKey] = newColor;
     }
-
     chartInstance.updateSeries([val], shouldAnimate);
   }
 
   function updateUI(data) {
     const statusEl = document.getElementById("status-indicator");
 
+    // 1. BLINDAJE CONTRA FALLOS
+    // Si data es null, undefined, o tiene error, NO ACTUALIZAMOS nada visualmente
+    // y mantenemos los valores anteriores.
     if (!data || data.error) {
+      console.warn(
+        "⚠️ Fetch fallido o datos corruptos. Manteniendo valores anteriores.",
+      );
       if (statusEl) {
-        statusEl.innerText = "API ERROR";
+        statusEl.innerText = "RECONECTANDO...";
         statusEl.className = "status-offline";
+        statusEl.style.color = "#f59e0b"; // Naranja advertencia
       }
-      return;
+      return; // SALIR DE LA FUNCIÓN, NO TOCAR LOS GRÁFICOS
     }
-    // Parseo
-    let batVal = parseFloat(data.battery_charge || 0);
-    let voltVal = parseFloat(data.input_voltage || 0);
-    let loadVal = parseFloat(data.ups_load || 0);
 
-    // Textos
+    // 2. PARSEO SEGURO
+    // Si por alguna razón viene 0, verificamos si es un cero real o un fallo de lectura
+    // Aquí asumimos que si viene data, es buena.
+    let batVal = parseFloat(data.battery_charge);
+    let voltVal = parseFloat(data.input_voltage);
+    let loadVal = parseFloat(data.ups_load);
+
+    // Si falló el parseFloat (NaN), usamos el último valor válido
+    if (isNaN(batVal)) batVal = lastValidData.bat;
+    if (isNaN(voltVal)) voltVal = lastValidData.volt;
+    if (isNaN(loadVal)) loadVal = lastValidData.load;
+
+    // Guardamos para la próxima vez que falle
+    lastValidData = { bat: batVal, volt: voltVal, load: loadVal };
+
+    // 3. ACTUALIZACIÓN VISUAL
     document.getElementById("val-battery").innerText = Math.round(batVal) + "%";
     document.getElementById("val-voltage").innerText =
       Math.round(voltVal) + " V";
     document.getElementById("val-load").innerText = Math.round(loadVal) + " %";
 
-    // Estado
     if (statusEl) {
       if (voltVal > 150) {
         statusEl.innerText = "ONLINE (RED)";
         statusEl.className = "status-online";
+        statusEl.style.color = ""; // Reset color
       } else {
         statusEl.innerText = "OFFLINE (BATERÍA)";
         statusEl.className = "status-offline";
@@ -233,16 +242,33 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("last-update").innerText =
       "Actualizado: " + new Date().toLocaleTimeString();
 
-    updateGauge(charts.radBat, batVal, getColorForBattery, "battery", true); // Animado
-    updateGauge(charts.radVolt, voltVal, getColorForVoltage, "voltage", false); // Estatico
-    updateGauge(charts.radLoad, loadVal, getColorForLoad, "load", true); // Animado
+    // Evitar animación brusca en la primera carga
+    const animate = !isFirstLoad;
+
+    updateGauge(charts.radBat, batVal, getColorForBattery, "battery", animate);
+    updateGauge(charts.radVolt, voltVal, getColorForVoltage, "voltage", false); // Voltaje siempre estático
+    updateGauge(charts.radLoad, loadVal, getColorForLoad, "load", animate);
+
+    isFirstLoad = false;
   }
 
   function fetchLiveData() {
     fetch("/api/data")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("HTTP Error");
+        return r.json();
+      })
       .then((d) => updateUI(d))
-      .catch((e) => console.error(e));
+      .catch((e) => {
+        console.error("Error en fetch:", e);
+        // Si falla el fetch, updateUI no se llama,
+        // pero cambiamos el estado visual a reconectando
+        const statusEl = document.getElementById("status-indicator");
+        if (statusEl) {
+          statusEl.innerText = "ESPERANDO DATOS...";
+          statusEl.className = "status-offline";
+        }
+      });
   }
 
   function fetchHistory() {

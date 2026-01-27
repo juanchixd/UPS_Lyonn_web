@@ -51,9 +51,8 @@ def get_ups_data():
 
 @app.route('/')
 def index():
-    # Realiza una solicitud GET a la API externa / Make a GET request to the external API
-    data = get_ups_data()
-    return render_template('index.html', data=data)
+    # Renderiza la plantilla index.html / Render the index.html template
+    return render_template('index.html', data=None)
 
 # Ruta para obtener los datos de la API / Route to get data from the API
 
