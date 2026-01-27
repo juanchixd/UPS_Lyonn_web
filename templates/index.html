@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>UPS Dashboard</title>
+
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/styles.css') }}"
@@ -13,76 +14,120 @@
       href="{{ url_for('static', filename='favicon.ico') }}"
       type="image/x-icon"
     />
-    <script src="{{ url_for('static', filename='js/gauge.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/chart.js') }}"></script>
-    <!-- Google tag (gtag.js) -->
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-CF8MRJ0Y8V"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
 
-      gtag("config", "G-CF8MRJ0Y8V");
-    </script>
-    <!--<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>-->
+    <script src="{{ url_for('static', filename='js/apexcharts.js') }}"></script>
   </head>
+
   <body class="dark-mode">
-    <button id="dark-mode-toggle">🌕</button>
+    <button id="theme-toggle" title="Cambiar Tema">☀</button>
 
     <div class="container">
-      <h1>UPS Dashboard</h1>
+      <header>
+        <div class="header-content">
+          <h1>UPS MONITOR</h1>
+          <p class="subtitle">Real-time Power Stats</p>
+        </div>
+        <div id="status-indicator" class="status-offline">Connecting...</div>
+      </header>
 
-      <div id="statusBadge" class="status-badge online">
-        <span class="status-dot"></span> Online
+      <div class="kpi-grid">
+        <div class="card kpi-card">
+          <div class="kpi-info">
+            <h3>Batería</h3>
+            <span id="val-battery" class="val-text">--%</span>
+          </div>
+          <div id="radialBattery" class="radial-chart"></div>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="kpi-info">
+            <h3>Entrada</h3>
+            <span id="val-voltage" class="val-text">-- V</span>
+          </div>
+          <div id="radialVoltage" class="radial-chart"></div>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="kpi-info">
+            <h3>Carga UPS</h3>
+            <span id="val-load" class="val-text">-- %</span>
+          </div>
+          <div id="radialLoad" class="radial-chart"></div>
+        </div>
       </div>
 
-      <div class="gauges-row">
-        <div class="gauge-card">
-          <div class="gauge-title">Battery Charge</div>
-          <canvas id="batteryChargeGauge"></canvas>
-          <div id="batteryChargeValue" class="gauge-value">--%</div>
+      <div class="history-grid">
+        <div class="card chart-card">
+          <div class="card-header">
+            <h3>Historial Voltaje (24h)</h3>
+          </div>
+          <div id="areaVoltage"></div>
         </div>
-        <div class="gauge-card">
-          <div class="gauge-title">Input Voltage</div>
-          <canvas id="inputVoltageGauge"></canvas>
-          <div id="inputVoltageValue" class="gauge-value">-- V</div>
-        </div>
-        <div class="gauge-card">
-          <div class="gauge-title">UPS Load</div>
-          <canvas id="upsLoadGauge"></canvas>
-          <div id="upsLoadValue" class="gauge-value">-- %</div>
-        </div>
-      </div>
 
-      <div class="charts-container">
-        <div class="chart-card">
-          <canvas id="inputVoltageChart"></canvas>
+        <div class="card chart-card">
+          <div class="card-header">
+            <h3>Historial Carga (24h)</h3>
+          </div>
+          <div id="areaLoad"></div>
         </div>
-        <div class="chart-card">
-          <canvas id="upsLoadChart"></canvas>
-        </div>
-        <div class="chart-card chart-full-width">
-          <canvas id="batteryChargeChart"></canvas>
+
+        <div class="card chart-card">
+          <div class="card-header">
+            <h3>Historial Batería (24h)</h3>
+          </div>
+          <div id="areaBattery"></div>
         </div>
       </div>
     </div>
     <footer>
-      <p>
-        &copy; Created with 🧉 by
-        <a href="https://juangonzalez.com.ar">Juan Gonzalez</a> - ©
-      </p>
-      <p><a href="https://github.com/juanchixd/UPS_Lyonn_web">Repository</a></p>
+      <div class="footer-container">
+        <div class="footer-section">
+          <p>
+            Created with 🧉 by
+            <a
+              href="https://juangonzalez.com.ar"
+              target="_blank"
+              class="footer-link"
+              >Juan Gonzalez</a
+            >
+          </p>
+        </div>
+
+        <div class="footer-section system-info">
+          <span class="version">UPS Monitor v2.1</span>
+          <span class="separator">•</span>
+          <span id="last-update" class="update-pulse">Esperando datos...</span>
+        </div>
+
+        <div class="footer-section">
+          <a
+            href="https://github.com/juanchixd/UPS_Lyonn_web"
+            target="_blank"
+            class="github-btn"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              stroke="currentColor"
+              stroke-width="2"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+              ></path>
+            </svg>
+            GitHub Repo
+          </a>
+        </div>
+      </div>
     </footer>
 
     <script>
-      var data = {{ data | tojson | safe }};
+      var initialData = {{ data | tojson | safe }};
     </script>
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/toggle_mode.js') }}"></script>
   </body>
 </html>
