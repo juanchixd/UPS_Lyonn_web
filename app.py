@@ -24,14 +24,10 @@ cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 REQUEST_TIMEOUT = 5
 
 # Configurar conexión a Supabase usando variables de entorno / Setup Supabase connection using environment variables
-# SUPABASE_URL = os.getenv("SUPABASE_URL")
-# SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-# API_URL = os.getenv("API_URL")
-# NAME_TABLE = os.getenv("NAME_TABLE")
-SUPABASE_URL = "https://ncalzifdwlfajsuvkenn.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jYWx6aWZkd2xmYWpzdXZrZW5uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjM3NTY4NzcsImV4cCI6MjAzOTMzMjg3N30.5cN29sB8cAAipRudsly3D2eTEBhkQzCNzPOGd_71dTU"
-API_URL = "https://apiups.juangonzalez.com.ar/api/realtime_data"
-NAME_TABLE = "ups_status"
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+API_URL = os.getenv("API_URL")
+NAME_TABLE = os.getenv("NAME_TABLE")
 
 def get_ups_data():
     """Obtiene datos de la API externa / Get data from the external API"""
