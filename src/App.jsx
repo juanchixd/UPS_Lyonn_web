@@ -1,20 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
 import {
-  Activity,
-  AlertTriangle,
-  BatteryCharging,
-  Clock,
-  Cpu,
-  Github,
-  Moon,
-  RefreshCw,
-  ShieldCheck,
-  Sun,
-  WifiOff,
-  Zap,
-} from 'lucide-react'
-import {
   Area,
   AreaChart,
   CartesianGrid,
@@ -24,53 +10,51 @@ import {
   YAxis,
 } from 'recharts'
 
-function RadialGauge({ value, max, unit, label, sublabel, color, isDark }) {
+function RadialGauge({ value, max, label, color, isDark }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100))
-  const radius = 50
+  const radius = 52
   const circumference = 2 * Math.PI * radius
   const arcLength = circumference * 0.75
   const dashOffset = arcLength - (pct / 100) * arcLength
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="relative w-36 h-32 flex items-center justify-center">
-        <svg className="w-36 h-36 -rotate-[225deg]" viewBox="0 0 120 120">
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            stroke={isDark ? '#1e293b' : '#e2e8f0'}
-            strokeWidth="10"
-            strokeDasharray={`${arcLength} ${circumference}`}
-            strokeLinecap="round"
-          />
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            stroke={color}
-            strokeWidth="10"
-            strokeDasharray={`${arcLength} ${circumference}`}
-            strokeDashoffset={dashOffset}
-            strokeLinecap="round"
-            style={{ transition: 'stroke-dashoffset 0.6s ease, stroke 0.4s ease' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pt-2">
-          <span className="text-2xl font-bold tracking-tight">
-            {typeof value === 'number' ? value : '--'}
-            <span className="text-sm font-medium opacity-75 ml-0.5">{unit}</span>
-          </span>
-          {sublabel && (
-            <span className="text-xs font-medium opacity-60 mt-0.5">{sublabel}</span>
-          )}
-        </div>
+    <div className="relative w-36 h-36 shrink-0 flex items-center justify-center select-none">
+      <svg className="w-36 h-36 -rotate-[225deg]" viewBox="0 0 128 128">
+        <circle
+          cx="64"
+          cy="64"
+          r={radius}
+          fill="none"
+          stroke={isDark ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.15)'}
+          strokeWidth="10"
+          strokeDasharray={`${arcLength} ${circumference}`}
+          strokeLinecap="round"
+        />
+        <circle
+          cx="64"
+          cy="64"
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth="10"
+          strokeDasharray={`${arcLength} ${circumference}`}
+          strokeDashoffset={dashOffset}
+          strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span
+          className={`text-[11px] font-medium ${
+            isDark ? 'text-slate-400' : 'text-slate-500'
+          }`}
+        >
+          {label}
+        </span>
+        <span className="text-xl font-bold leading-tight mt-0.5">
+          {typeof value === 'number' ? Math.round(value) : '--'}
+        </span>
       </div>
-      <span className="text-xs uppercase tracking-wider font-semibold opacity-70 -mt-2">
-        {label}
-      </span>
     </div>
   )
 }
@@ -102,7 +86,7 @@ export default function App() {
         .from('ups_outages')
         .select('*')
         .order('started_at', { ascending: false })
-        .limit(10),
+        .limit(8),
     ])
     if (liveRows) setLive(liveRows)
     if (outageRows) setOutages(outageRows)
@@ -164,30 +148,13 @@ export default function App() {
           minute: '2-digit',
           hour12: false,
         }),
-        fullDate: dt.toLocaleString('es-AR', { hour12: false }),
-        input_voltage: Number(pt.input_voltage),
-        output_voltage: Number(pt.output_voltage),
-        ups_load: Number(pt.ups_load),
-        ups_watts: Number(pt.ups_watts),
-        battery_charge: Number(pt.battery_charge),
-        battery_voltage: Number(pt.battery_voltage),
+        input_voltage: Math.round(Number(pt.input_voltage) * 10) / 10,
+        ups_load: Math.round(Number(pt.ups_load)),
+        ups_watts: Math.round(Number(pt.ups_watts)),
+        battery_charge: Math.round(Number(pt.battery_charge)),
       }
     })
   }, [telemetry])
-
-  const stats = useMemo(() => {
-    if (!chartData.length) return null
-    const volts = chartData.map((d) => d.input_voltage).filter((v) => v > 0)
-    const watts = chartData.map((d) => d.ups_watts)
-    return {
-      vMin: volts.length ? Math.min(...volts).toFixed(1) : '--',
-      vMax: volts.length ? Math.max(...volts).toFixed(1) : '--',
-      wAvg: watts.length
-        ? Math.round(watts.reduce((a, b) => a + b, 0) / watts.length)
-        : '--',
-      wPeak: watts.length ? Math.round(Math.max(...watts)) : '--',
-    }
-  }, [chartData])
 
   const inVolt = Number(live?.input_voltage ?? 0)
   const outVolt = Number(live?.output_voltage ?? 0)
@@ -195,373 +162,277 @@ export default function App() {
   const loadPct = Number(live?.ups_load ?? 0)
   const watts = Number(live?.ups_watts ?? 0)
   const va = Number(live?.ups_va ?? 0)
-  const kw = (watts / 1000).toFixed(2)
   const battPct = Number(live?.battery_charge ?? 0)
   const battVolt = Number(live?.battery_voltage ?? 0)
   const runtimeMin = Number(live?.runtime_min ?? 0)
 
   const voltColor =
-    inVolt < 195 || inVolt > 245
+    inVolt < 190 || inVolt > 245
       ? '#ef4444'
-      : inVolt < 208 || inVolt > 238
+      : inVolt < 205
       ? '#f59e0b'
-      : '#38bdf8'
+      : '#3b82f6'
   const loadColor =
-    loadPct >= 85 ? '#ef4444' : loadPct >= 65 ? '#f59e0b' : '#f59e0b'
+    loadPct >= 85 ? '#ef4444' : loadPct >= 65 ? '#f59e0b' : '#10b981'
   const battColor =
-    battPct <= 25 ? '#ef4444' : battPct <= 55 ? '#f59e0b' : '#10b981'
+    battPct <= 20 ? '#ef4444' : battPct <= 50 ? '#f59e0b' : '#10b981'
+
+  const cardClass = isDark
+    ? 'bg-[#1e293b] border border-white/5 rounded-xl p-5 shadow-sm'
+    : 'bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm'
 
   return (
     <div
       className={
         isDark
-          ? 'min-h-screen bg-slate-950 text-slate-100 transition-colors'
-          : 'min-h-screen bg-slate-50 text-slate-900 transition-colors'
+          ? 'min-h-screen bg-[#0f172a] text-[#f8fafc] transition-colors font-sans'
+          : 'min-h-screen bg-[#f1f5f9] text-[#1e293b] transition-colors font-sans'
       }
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Header */}
+      {/* Floating Theme Toggle */}
+      <button
+        onClick={() => setIsDark(!isDark)}
+        title="Cambiar Tema"
+        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-[#3b82f6] text-white text-xl shadow-lg hover:scale-105 transition flex items-center justify-center z-50 cursor-pointer"
+      >
+        {isDark ? '☀' : '☾'}
+      </button>
+
+      <div className="max-w-[1500px] mx-auto px-5 py-6">
+        {/* Clean Header */}
         <header
-          className={`rounded-2xl border p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-lg ${
-            isDark
-              ? 'bg-slate-900/80 border-slate-800'
-              : 'bg-white border-slate-200'
+          className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 mb-6 border-b ${
+            isDark ? 'border-white/5' : 'border-black/5'
           }`}
         >
-          <div className="flex items-center gap-3.5">
-            <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
-              <Zap className="w-7 h-7" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-                  UPS LYONN 800VA
-                </h1>
-                <span className="text-xs px-2 py-0.5 rounded-md font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30">
-                  480W / 800VA
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm opacity-65 mt-0.5">
-                Telemetría Eléctrica en Tiempo Real • Host Lenovo M920 + Zabbix + Supabase
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight m-0">UPS MONITOR</h1>
+            <p
+              className={`text-sm m-0 ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}
+            >
+              Lyonn 800VA (480W) • Real-time Power Stats
+            </p>
           </div>
 
-          <div className="flex items-center gap-3 self-start sm:self-center">
-            {/* Live status badge */}
-            {loading ? (
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-300">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Conectando...
-              </span>
-            ) : isServerStale ? (
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                <WifiOff className="w-3.5 h-3.5" />
-                SERVIDOR OFFLINE (hace {Math.floor(secondsSinceUpdate / 60)}m)
-              </span>
-            ) : isOnBattery ? (
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                EN BATERÍA ({live?.ups_status})
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                ONLINE • RED ELÉCTRICA ({live?.ups_status || 'OL'})
-              </span>
-            )}
-
-            <button
-              onClick={() => setIsDark(!isDark)}
-              className={`p-2.5 rounded-xl border transition ${
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Period filter */}
+            <div
+              className={`inline-flex rounded-lg p-1 border ${
                 isDark
-                  ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 text-amber-300'
-                  : 'bg-slate-100 border-slate-300 hover:bg-slate-200 text-slate-700'
+                  ? 'bg-[#1e293b] border-white/5'
+                  : 'bg-white border-slate-200'
               }`}
-              title="Cambiar tema Claro/Oscuro"
             >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
+              {[
+                { label: '1h', val: 1 },
+                { label: '6h', val: 6 },
+                { label: '24h', val: 24 },
+                { label: '7d', val: 168 },
+              ].map((btn) => (
+                <button
+                  key={btn.val}
+                  onClick={() => setHoursRange(btn.val)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
+                    hoursRange === btn.val
+                      ? 'bg-[#3b82f6] text-white'
+                      : isDark
+                      ? 'text-slate-400 hover:text-white'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {btn.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Status Indicator */}
+            {loading ? (
+              <div className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider border bg-slate-500/15 text-slate-400 border-slate-500">
+                CONECTANDO...
+              </div>
+            ) : isServerStale ? (
+              <div className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider border bg-amber-500/15 text-amber-400 border-amber-500">
+                SIN CONEXIÓN (HACE {Math.floor(secondsSinceUpdate / 60)}M)
+              </div>
+            ) : isOnBattery ? (
+              <div className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider border bg-red-500/15 text-red-400 border-red-500 animate-pulse">
+                OFFLINE (BATERÍA)
+              </div>
+            ) : (
+              <div className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider border bg-emerald-500/15 text-emerald-400 border-emerald-500">
+                ONLINE (RED)
+              </div>
+            )}
           </div>
         </header>
 
-        {/* Stale Server Alert Banner */}
-        {isServerStale && (
-          <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 flex items-start gap-3 text-amber-300 text-sm">
-            <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-amber-400" />
-            <div>
-              <p className="font-semibold">
-                El servidor local lleva {Math.floor(secondsSinceUpdate / 60)} min sin reportar a Supabase
-              </p>
-              <p className="opacity-80 text-xs mt-0.5">
-                Mostrando el último estado conocido guardado en la nube antes de perder conexión (
-                {live?.updated_at
-                  ? new Date(live.updated_at).toLocaleString('es-AR', { hour12: false })
-                  : 'N/A'}
-                ).
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* 4 KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Voltage */}
-          <div
-            className={`rounded-2xl border p-5 flex flex-col justify-between shadow-md ${
-              isDark
-                ? 'bg-slate-900/75 border-slate-800'
-                : 'bg-white border-slate-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider opacity-60">
-                  Tensión de Línea
-                </p>
-                <p className="text-2xl font-bold mt-1">{inVolt.toFixed(1)} V</p>
+        {/* KPI Grid (3 Horizontal Cards matching original design) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          {/* KPI 1: Batería */}
+          <div className={`${cardClass} flex items-center justify-between min-h-[155px]`}>
+            <div className="space-y-1.5">
+              <h3
+                className={`text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}
+              >
+                Batería
+              </h3>
+              <div className="text-4xl font-bold leading-none">
+                {Math.round(battPct)}%
               </div>
-              <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-400">
-                <Activity className="w-5 h-5" />
+              <div
+                className={`text-xs pt-1 space-y-0.5 ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}
+              >
+                <div>Tensión DC: {battVolt.toFixed(1)} V</div>
+                <div>Autonomía est.: ~{Math.round(runtimeMin)} min</div>
               </div>
             </div>
-
             <RadialGauge
-              value={Math.round(inVolt)}
-              max={260}
-              unit="V"
-              label="Entrada AC"
-              sublabel={`Salida: ${outVolt.toFixed(1)}V • ${freq.toFixed(0)}Hz`}
-              color={voltColor}
-              isDark={isDark}
-            />
-          </div>
-
-          {/* Card 2: Power Load in Watts & % */}
-          <div
-            className={`rounded-2xl border p-5 flex flex-col justify-between shadow-md ${
-              isDark
-                ? 'bg-slate-900/75 border-slate-800'
-                : 'bg-white border-slate-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider opacity-60">
-                  Consumo Real
-                </p>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <p className="text-2xl font-bold text-amber-400">
-                    {Math.round(watts)} W
-                  </p>
-                  <span className="text-xs opacity-70 font-medium">
-                    ({kw} kW • {Math.round(va)} VA)
-                  </span>
-                </div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
-                <Cpu className="w-5 h-5" />
-              </div>
-            </div>
-
-            <RadialGauge
-              value={Math.round(loadPct)}
+              value={battPct}
               max={100}
-              unit="%"
-              label="Carga sobre 480W"
-              sublabel={`${Math.round(watts)} W / 480 W máx`}
-              color={loadColor}
-              isDark={isDark}
-            />
-          </div>
-
-          {/* Card 3: Battery */}
-          <div
-            className={`rounded-2xl border p-5 flex flex-col justify-between shadow-md ${
-              isDark
-                ? 'bg-slate-900/75 border-slate-800'
-                : 'bg-white border-slate-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider opacity-60">
-                  Carga Batería
-                </p>
-                <p className="text-2xl font-bold text-emerald-400 mt-1">
-                  {Math.round(battPct)}%
-                </p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
-                <BatteryCharging className="w-5 h-5" />
-              </div>
-            </div>
-
-            <RadialGauge
-              value={Math.round(battPct)}
-              max={100}
-              unit="%"
-              label="Batería 12V 7Ah"
-              sublabel={`Tensión DC: ${battVolt.toFixed(2)} V`}
+              label="Batería %"
               color={battColor}
               isDark={isDark}
             />
           </div>
 
-          {/* Card 4: Estimated Runtime & Specs */}
-          <div
-            className={`rounded-2xl border p-5 flex flex-col justify-between shadow-md ${
-              isDark
-                ? 'bg-slate-900/75 border-slate-800'
-                : 'bg-white border-slate-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider opacity-60">
-                  Autonomía Estimada
-                </p>
-                <p className="text-2xl font-bold text-indigo-400 mt-1">
-                  ~{Math.round(runtimeMin)} min
-                </p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
-                <Clock className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="my-auto space-y-3 pt-4">
-              <div className="flex justify-between text-xs">
-                <span className="opacity-70">Potencia Activa:</span>
-                <span className="font-semibold">{Math.round(watts)} W / 480 W</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="opacity-70">Potencia Aparente:</span>
-                <span className="font-semibold">{Math.round(va)} VA / 800 VA</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="opacity-70">Voltaje Flotación DC:</span>
-                <span className="font-semibold">{battVolt.toFixed(2)} V</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="opacity-70">Última sincronización:</span>
-                <span className="font-semibold">
-                  {live?.updated_at
-                    ? new Date(live.updated_at).toLocaleTimeString('es-AR', {
-                        hour12: false,
-                      })
-                    : '--:--:--'}
-                </span>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs opacity-70">
-              <span className="inline-flex items-center gap-1 text-emerald-400 font-medium">
-                <ShieldCheck className="w-3.5 h-3.5" /> RLS Protegido
-              </span>
-              <span>Supabase Realtime</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Range Selector & Summary Bar */}
-        <div
-          className={`rounded-2xl border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${
-            isDark
-              ? 'bg-slate-900/75 border-slate-800'
-              : 'bg-white border-slate-200'
-          }`}
-        >
-          <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm">
-            <span className="font-semibold">Estadísticas del período:</span>
-            {stats && (
-              <>
-                <span className="px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                  Tensión Mín/Máx: <b>{stats.vMin}V</b> / <b>{stats.vMax}V</b>
-                </span>
-                <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                  Consumo Promedio: <b>{stats.wAvg} W</b> • Pico: <b>{stats.wPeak} W</b>
-                </span>
-              </>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 self-start sm:self-center">
-            {[
-              { label: '1h', val: 1 },
-              { label: '6h', val: 6 },
-              { label: '24h', val: 24 },
-              { label: '7d', val: 168 },
-            ].map((btn) => (
-              <button
-                key={btn.val}
-                onClick={() => setHoursRange(btn.val)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                  hoursRange === btn.val
-                    ? 'bg-sky-500 text-white shadow-sm'
-                    : isDark
-                    ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          {/* KPI 2: Entrada */}
+          <div className={`${cardClass} flex items-center justify-between min-h-[155px]`}>
+            <div className="space-y-1.5">
+              <h3
+                className={`text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
                 }`}
               >
-                {btn.label}
-              </button>
-            ))}
+                Entrada
+              </h3>
+              <div className="text-4xl font-bold leading-none">
+                {Math.round(inVolt)} V
+              </div>
+              <div
+                className={`text-xs pt-1 space-y-0.5 ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}
+              >
+                <div>Exacto: {inVolt.toFixed(1)} V ({freq.toFixed(0)} Hz)</div>
+                <div>Salida: {outVolt.toFixed(1)} V</div>
+              </div>
+            </div>
+            <RadialGauge
+              value={inVolt}
+              max={260}
+              label="Entrada V"
+              color={voltColor}
+              isDark={isDark}
+            />
+          </div>
+
+          {/* KPI 3: Carga UPS (Watts + %) */}
+          <div className={`${cardClass} flex items-center justify-between min-h-[155px]`}>
+            <div className="space-y-1.5">
+              <h3
+                className={`text-xs font-semibold uppercase tracking-wider ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}
+              >
+                Carga UPS
+              </h3>
+              <div className="flex items-baseline gap-2.5">
+                <span className="text-4xl font-bold leading-none">
+                  {Math.round(watts)} W
+                </span>
+                <span
+                  className={`text-lg font-semibold ${
+                    isDark ? 'text-slate-400' : 'text-slate-500'
+                  }`}
+                >
+                  ({Math.round(loadPct)}%)
+                </span>
+              </div>
+              <div
+                className={`text-xs pt-1 space-y-0.5 ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}
+              >
+                <div>
+                  {(watts / 1000).toFixed(2)} kW • ~{Math.round(va)} VA
+                </div>
+                <div>Capacidad: 480 W / 800 VA</div>
+              </div>
+            </div>
+            <RadialGauge
+              value={loadPct}
+              max={100}
+              label="Carga %"
+              color={loadColor}
+              isDark={isDark}
+            />
           </div>
         </div>
 
-        {/* Telemetry Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Chart 1: Voltage */}
-          <div
-            className={`rounded-2xl border p-5 shadow-md ${
-              isDark
-                ? 'bg-slate-900/75 border-slate-800'
-                : 'bg-white border-slate-200'
-            }`}
-          >
-            <h3 className="text-sm font-semibold mb-4 flex items-center justify-between">
-              <span>Historial de Tensión (V)</span>
-              <span className="text-xs text-sky-400 font-normal">
-                Últimas {hoursRange}h
-              </span>
+        {/* History Charts Grid (3 Equal Columns) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+          {/* Chart 1: Voltaje */}
+          <div className={cardClass}>
+            <h3
+              className={`text-sm font-semibold mb-4 ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}
+            >
+              Historial Voltaje ({hoursRange}h)
             </h3>
-            <div className="h-64">
+            <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
+                <AreaChart
+                  data={chartData}
+                  margin={{ top: 5, right: 10, left: -10, bottom: 0 }}
+                >
                   <defs>
                     <linearGradient id="gradVolt" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.0} />
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={isDark ? '#1e293b' : '#e2e8f0'}
+                    strokeDasharray="4 4"
+                    stroke={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
                   />
                   <XAxis
                     dataKey="time"
-                    stroke={isDark ? '#64748b' : '#94a3b8'}
+                    stroke={isDark ? '#94a3b8' : '#64748b'}
                     fontSize={11}
+                    tickLine={false}
+                    minTickGap={28}
                   />
                   <YAxis
-                    domain={['dataMin - 4', 'dataMax + 4']}
-                    stroke={isDark ? '#64748b' : '#94a3b8'}
+                    domain={[
+                      (dataMin) => Math.floor((dataMin || 215) - 4),
+                      (dataMax) => Math.ceil((dataMax || 235) + 4),
+                    ]}
+                    allowDecimals={false}
+                    tickFormatter={(v) => `${Math.round(v)}`}
+                    stroke={isDark ? '#94a3b8' : '#64748b'}
                     fontSize={11}
-                    unit="V"
+                    tickLine={false}
                   />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: isDark ? '#0f172a' : '#ffffff',
                       borderColor: isDark ? '#334155' : '#cbd5e1',
-                      borderRadius: '0.75rem',
+                      borderRadius: '8px',
                       fontSize: '12px',
                     }}
+                    formatter={(val) => [`${val} V`, 'Voltaje']}
                   />
                   <Area
                     type="monotone"
                     dataKey="input_voltage"
-                    name="Entrada (V)"
-                    stroke="#38bdf8"
+                    stroke="#3b82f6"
                     strokeWidth={2}
                     fill="url(#gradVolt)"
                   />
@@ -570,121 +441,123 @@ export default function App() {
             </div>
           </div>
 
-          {/* Chart 2: Power in Watts */}
-          <div
-            className={`rounded-2xl border p-5 shadow-md ${
-              isDark
-                ? 'bg-slate-900/75 border-slate-800'
-                : 'bg-white border-slate-200'
-            }`}
-          >
-            <h3 className="text-sm font-semibold mb-4 flex items-center justify-between">
-              <span>Consumo Eléctrico (Watts)</span>
-              <span className="text-xs text-amber-400 font-normal">
-                Potencia Activa (W)
-              </span>
+          {/* Chart 2: Carga (Watts & %) */}
+          <div className={cardClass}>
+            <h3
+              className={`text-sm font-semibold mb-4 ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}
+            >
+              Historial Consumo en Watts ({hoursRange}h)
             </h3>
-            <div className="h-64">
+            <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
+                <AreaChart
+                  data={chartData}
+                  margin={{ top: 5, right: 10, left: -10, bottom: 0 }}
+                >
                   <defs>
-                    <linearGradient id="gradWatts" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="gradLoad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={isDark ? '#1e293b' : '#e2e8f0'}
+                    strokeDasharray="4 4"
+                    stroke={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
                   />
                   <XAxis
                     dataKey="time"
-                    stroke={isDark ? '#64748b' : '#94a3b8'}
+                    stroke={isDark ? '#94a3b8' : '#64748b'}
                     fontSize={11}
+                    tickLine={false}
+                    minTickGap={28}
                   />
                   <YAxis
-                    domain={[0, 'dataMax + 40']}
-                    stroke={isDark ? '#64748b' : '#94a3b8'}
+                    domain={[0, (dataMax) => Math.ceil(((dataMax || 150) + 40) / 20) * 20]}
+                    allowDecimals={false}
+                    tickFormatter={(v) => `${Math.round(v)}W`}
+                    stroke={isDark ? '#94a3b8' : '#64748b'}
                     fontSize={11}
-                    unit="W"
+                    tickLine={false}
                   />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: isDark ? '#0f172a' : '#ffffff',
                       borderColor: isDark ? '#334155' : '#cbd5e1',
-                      borderRadius: '0.75rem',
+                      borderRadius: '8px',
                       fontSize: '12px',
                     }}
-                    formatter={(val, name, props) => {
-                      if (name === 'Consumo (W)') {
-                        return [`${val} W (${props.payload.ups_load}%)`, name]
-                      }
-                      return [val, name]
-                    }}
+                    formatter={(val, _name, props) => [
+                      `${val} W (${props.payload.ups_load}%)`,
+                      'Consumo',
+                    ]}
                   />
                   <Area
                     type="monotone"
                     dataKey="ups_watts"
-                    name="Consumo (W)"
                     stroke="#f59e0b"
                     strokeWidth={2}
-                    fill="url(#gradWatts)"
+                    fill="url(#gradLoad)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Chart 3: Battery */}
-          <div
-            className={`rounded-2xl border p-5 shadow-md ${
-              isDark
-                ? 'bg-slate-900/75 border-slate-800'
-                : 'bg-white border-slate-200'
-            }`}
-          >
-            <h3 className="text-sm font-semibold mb-4 flex items-center justify-between">
-              <span>Carga de Batería (%)</span>
-              <span className="text-xs text-emerald-400 font-normal">
-                Respaldo 12V DC
-              </span>
+          {/* Chart 3: Batería */}
+          <div className={cardClass}>
+            <h3
+              className={`text-sm font-semibold mb-4 ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}
+            >
+              Historial Batería ({hoursRange}h)
             </h3>
-            <div className="h-64">
+            <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
+                <AreaChart
+                  data={chartData}
+                  margin={{ top: 5, right: 10, left: -10, bottom: 0 }}
+                >
                   <defs>
                     <linearGradient id="gradBat" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={isDark ? '#1e293b' : '#e2e8f0'}
+                    strokeDasharray="4 4"
+                    stroke={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
                   />
                   <XAxis
                     dataKey="time"
-                    stroke={isDark ? '#64748b' : '#94a3b8'}
+                    stroke={isDark ? '#94a3b8' : '#64748b'}
                     fontSize={11}
+                    tickLine={false}
+                    minTickGap={28}
                   />
                   <YAxis
-                    domain={[0, 105]}
-                    stroke={isDark ? '#64748b' : '#94a3b8'}
+                    domain={[0, 100]}
+                    ticks={[0, 25, 50, 75, 100]}
+                    allowDecimals={false}
+                    tickFormatter={(v) => `${v}%`}
+                    stroke={isDark ? '#94a3b8' : '#64748b'}
                     fontSize={11}
-                    unit="%"
+                    tickLine={false}
                   />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: isDark ? '#0f172a' : '#ffffff',
                       borderColor: isDark ? '#334155' : '#cbd5e1',
-                      borderRadius: '0.75rem',
+                      borderRadius: '8px',
                       fontSize: '12px',
                     }}
+                    formatter={(val) => [`${val}%`, 'Batería']}
                   />
                   <Area
                     type="monotone"
                     dataKey="battery_charge"
-                    name="Batería (%)"
                     stroke="#10b981"
                     strokeWidth={2}
                     fill="url(#gradBat)"
@@ -695,48 +568,42 @@ export default function App() {
           </div>
         </div>
 
-        {/* Outages Table */}
-        <div
-          className={`rounded-2xl border p-5 shadow-md ${
-            isDark
-              ? 'bg-slate-900/75 border-slate-800'
-              : 'bg-white border-slate-200'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-bold">
-                ⚡ Historial de Cortes de Suministro Eléctrico
-              </h3>
-              <p className="text-xs opacity-65">
-                Eventos registrados por Zabbix y sincronizados en la nube (Supabase)
-              </p>
-            </div>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 font-medium">
-              {outages.length} eventos
-            </span>
-          </div>
-
+        {/* Outages Card */}
+        <div className={cardClass}>
+          <h3
+            className={`text-sm font-semibold mb-3 ${
+              isDark ? 'text-slate-400' : 'text-slate-500'
+            }`}
+          >
+            Últimos Cortes de Energía
+          </h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs sm:text-sm">
+            <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr
-                  className={`border-b ${
-                    isDark ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'
+                  className={`border-b text-xs uppercase ${
+                    isDark
+                      ? 'border-white/5 text-slate-400'
+                      : 'border-slate-200 text-slate-500'
                   }`}
                 >
-                  <th className="py-2.5 px-3 font-semibold">Fecha</th>
-                  <th className="py-2.5 px-3 font-semibold">Inicio</th>
-                  <th className="py-2.5 px-3 font-semibold">Fin</th>
-                  <th className="py-2.5 px-3 font-semibold">Duración</th>
-                  <th className="py-2.5 px-3 font-semibold">Estado</th>
+                  <th className="py-2 px-3">Fecha</th>
+                  <th className="py-2 px-3">Hora Inicio</th>
+                  <th className="py-2 px-3">Hora Fin</th>
+                  <th className="py-2 px-3">Duración</th>
+                  <th className="py-2 px-3">Estado</th>
                 </tr>
               </thead>
               <tbody>
                 {outages.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center opacity-60">
-                      No hay cortes registrados.
+                    <td
+                      colSpan={5}
+                      className={`py-4 text-center text-xs ${
+                        isDark ? 'text-slate-500' : 'text-slate-400'
+                      }`}
+                    >
+                      Sin cortes registrados
                     </td>
                   </tr>
                 ) : (
@@ -747,31 +614,31 @@ export default function App() {
                       <tr
                         key={ev.id}
                         className={`border-b last:border-0 ${
-                          isDark ? 'border-slate-800/60' : 'border-slate-100'
+                          isDark ? 'border-white/5' : 'border-slate-100'
                         }`}
                       >
-                        <td className="py-3 px-3 font-medium">
+                        <td className="py-2.5 px-3">
                           {startDt.toLocaleDateString('es-AR')}
                         </td>
-                        <td className="py-3 px-3 font-mono">
+                        <td className="py-2.5 px-3 font-mono text-xs">
                           {startDt.toLocaleTimeString('es-AR', { hour12: false })}
                         </td>
-                        <td className="py-3 px-3 font-mono">
+                        <td className="py-2.5 px-3 font-mono text-xs">
                           {endDt
                             ? endDt.toLocaleTimeString('es-AR', { hour12: false })
                             : 'En curso'}
                         </td>
-                        <td className="py-3 px-3 font-semibold text-amber-400">
+                        <td className="py-2.5 px-3 font-semibold">
                           {formatDuration(ev.duration_sec)}
                         </td>
-                        <td className="py-3 px-3">
+                        <td className="py-2.5 px-3">
                           {ev.status === 'resolved' ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            <span className="text-xs font-semibold text-emerald-400">
                               Resuelto
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
-                              En Curso
+                            <span className="text-xs font-semibold text-red-400 animate-pulse">
+                              En curso
                             </span>
                           )}
                         </td>
@@ -784,31 +651,65 @@ export default function App() {
           </div>
         </div>
 
-        {/* Footer */}
-        <footer className="pt-2 pb-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs opacity-65">
-          <p>
-            Creado con 🧉 por{' '}
+        {/* Original Footer */}
+        <footer
+          className={`mt-10 pt-5 border-t text-sm flex flex-col sm:flex-row items-center justify-between gap-4 ${
+            isDark
+              ? 'border-white/5 text-slate-400'
+              : 'border-black/5 text-slate-500'
+          }`}
+        >
+          <div>
+            Created with 🧉 by{' '}
             <a
               href="https://juangonzalez.com.ar"
               target="_blank"
               rel="noreferrer"
-              className="text-sky-400 hover:underline font-medium"
+              className="text-[#3b82f6] font-semibold hover:underline"
             >
               Juan Gonzalez
             </a>
-          </p>
-          <div className="flex items-center gap-3">
-            <span>UPS Monitor v3.0 (React + Zabbix + Supabase)</span>
-            <span>•</span>
-            <a
-              href="https://github.com/juanchixd/UPS_Lyonn_web"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 hover:text-sky-400"
-            >
-              <Github className="w-3.5 h-3.5" /> GitHub Repo
-            </a>
           </div>
+
+          <div
+            className={`px-4 py-1.5 rounded-full border text-xs ${
+              isDark
+                ? 'bg-[#1e293b] border-white/5'
+                : 'bg-white border-slate-200'
+            }`}
+          >
+            <span>UPS Monitor v3.0</span>
+            <span className="mx-2 opacity-30">•</span>
+            <span>
+              Actualizado:{' '}
+              {live?.updated_at
+                ? new Date(live.updated_at).toLocaleTimeString('es-AR', {
+                    hour12: false,
+                  })
+                : 'Esperando datos...'}
+            </span>
+          </div>
+
+          <a
+            href="https://github.com/juanchixd/UPS_Lyonn_web"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 hover:text-white transition"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+            </svg>
+            GitHub Repo
+          </a>
         </footer>
       </div>
     </div>
