@@ -1,3 +1,6 @@
+node_modules/
+dist/
 .env
-.venv
-.vercel
+.vercel/
+__pycache__/
+*.pyc
